@@ -1,4 +1,9 @@
-package com.example.flyweather;
+package com.example.flyweather.activity;
+
+import com.example.flyweather.R;
+import com.example.flyweather.R.id;
+import com.example.flyweather.R.layout;
+import com.example.flyweather.R.menu;
 
 import android.app.Activity;
 import android.os.Bundle;
