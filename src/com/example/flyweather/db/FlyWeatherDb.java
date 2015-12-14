@@ -116,7 +116,7 @@ public class FlyWeatherDb {
 	/**
 	 * 将County实例存储到数据库。
 	 */
-	public void saveCounty(Country county) {
+	public void saveCountry(Country county) {
 		if (county != null) {
 			ContentValues values = new ContentValues();
 			values.put("county_name", county.getCountryName());
