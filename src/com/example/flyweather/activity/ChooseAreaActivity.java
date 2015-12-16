@@ -7,7 +7,7 @@ import java.util.concurrent.FutureTask;
 import com.example.flyweather.R;
 import com.example.flyweather.db.FlyWeatherDb;
 import com.example.flyweather.model.City;
-import com.example.flyweather.model.Country;
+import com.example.flyweather.model.County;
 import com.example.flyweather.model.Province;
 import com.example.flyweather.util.Utility;
 
@@ -60,7 +60,7 @@ public class ChooseAreaActivity extends Activity {
 	/**
 	 * 县列表
 	 */
-	private List<Country> countyList;
+	private List<County> countyList;
 	/**
 	 * 选中的省份
 	 */
@@ -118,7 +118,7 @@ public class ChooseAreaActivity extends Activity {
 					selectedCity = cityList.get(index);
 					queryCounties();
 				} else if (currentLevel == LEVEL_COUNTY) {//出现城市之下的乡镇列表后
-					String countyCode = countyList.get(index).getCountryCode();
+					String countyCode = countyList.get(index).getCountyCode();
 					Intent intent = new Intent(ChooseAreaActivity.this, WeatherActivity.class);
 					intent.putExtra("county_code", countyCode);//intent带上乡镇的编号到WeatherActivity页面
 					startActivity(intent);//开始跳转
@@ -177,8 +177,8 @@ public class ChooseAreaActivity extends Activity {
 		countyList = flyWeatherDb.loadCounties(selectedCity.getId());
 		if (countyList.size() > 0) {
 			dataList.clear();
-			for (Country county : countyList) {
-				dataList.add(county.getCountryName());
+			for (County county : countyList) {
+				dataList.add(county.getCountyName());
 			}
 			adapter.notifyDataSetChanged();
 			listView.setSelection(0);
@@ -246,6 +246,7 @@ public class ChooseAreaActivity extends Activity {
         FutureTask<String> task = liteHttp.performAsync(request);
         task.cancel(true);
         
+        //原来的方法
 		/*HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
 			@Override
 			public void onFinish(String response) {

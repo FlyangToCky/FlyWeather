@@ -8,7 +8,7 @@ import org.json.JSONObject;
 
 import com.example.flyweather.db.FlyWeatherDb;
 import com.example.flyweather.model.City;
-import com.example.flyweather.model.Country;
+import com.example.flyweather.model.County;
 import com.example.flyweather.model.Province;
 
 
@@ -73,12 +73,12 @@ public class Utility {
 			if (allCounties != null && allCounties.length > 0) {
 				for (String c : allCounties) {
 					String[] array = c.split("\\|");
-					Country country = new Country();
-					country.setCountryCode(array[0]);
-					country.setCountryName(array[1]);
-					country.setCityId(cityId);
+					County county = new County();
+					county.setCountyCode(array[0]);
+					county.setCountyName(array[1]);
+					county.setCityId(cityId);
 					// 将解析出来的数据存储到County表
-					flyWeatherDB.saveCountry(country);
+					flyWeatherDB.saveCounty(county);
 				}
 				return true;
 			}
