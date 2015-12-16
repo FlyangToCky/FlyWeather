@@ -119,10 +119,10 @@ public class FlyWeatherDb {
 	public void saveCountry(Country county) {
 		if (county != null) {
 			ContentValues values = new ContentValues();
-			values.put("county_name", county.getCountryName());
-			values.put("county_code", county.getCountryCode());
+			values.put("country_name", county.getCountryName());
+			values.put("country_code", county.getCountryCode());
 			values.put("city_id", county.getCityId());
-			db.insert("County", null, values);
+			db.insert("Country", null, values);
 		}
 	}
 
@@ -131,16 +131,16 @@ public class FlyWeatherDb {
 	 */
 	public List<Country> loadCounties(int cityId) {
 		List<Country> list = new ArrayList<Country>();
-		Cursor cursor = db.query("County", null, "city_id = ?",
+		Cursor cursor = db.query("Country", null, "city_id = ?",
 				new String[] { String.valueOf(cityId) }, null, null, null);
 		if (cursor.moveToFirst()) {
 			do {
 				Country county = new Country();
 				county.setId(cursor.getInt(cursor.getColumnIndex("id")));
 				county.setCountryName(cursor.getString(cursor
-						.getColumnIndex("county_name")));
+						.getColumnIndex("country_name")));
 				county.setCountryCode(cursor.getString(cursor
-						.getColumnIndex("county_code")));
+						.getColumnIndex("country_code")));
 				county.setCityId(cityId);
 				list.add(county);
 			} while (cursor.moveToNext());

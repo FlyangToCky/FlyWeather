@@ -2,16 +2,22 @@ package com.example.flyweather.activity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.FutureTask;
 
 import com.example.flyweather.R;
 import com.example.flyweather.db.FlyWeatherDb;
 import com.example.flyweather.model.City;
 import com.example.flyweather.model.Country;
 import com.example.flyweather.model.Province;
-import com.example.flyweather.util.HttpCallbackListener;
-import com.example.flyweather.util.HttpUtil;
 import com.example.flyweather.util.Utility;
 
+import com.litesuits.http.HttpConfig;
+import com.litesuits.http.LiteHttp;
+import com.litesuits.http.exception.HttpException;
+import com.litesuits.http.listener.HttpListener;
+import com.litesuits.http.request.StringRequest;
+import com.litesuits.http.utils.HttpUtil;
+import com.litesuits.http.response.Response;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -20,6 +26,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -39,7 +46,7 @@ public class ChooseAreaActivity extends Activity {
 	private ListView listView;
 	
 	private ArrayAdapter<String> adapter;
-	private FlyWeatherDb fltWeatherDb;
+	private FlyWeatherDb flyWeatherDb;
 	private List<String> dataList = new ArrayList<String>();
 	
 	/**
@@ -71,9 +78,19 @@ public class ChooseAreaActivity extends Activity {
 	 */
 	private boolean isFromWeatherActivity;
 	
+	/*
+	 * 用于初始化LiteHttp
+	 */
+	protected static LiteHttp liteHttp;
+	protected Activity activity = null;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		setContentView(R.layout.choose_area);
+		activity=this;
+		initLiteHttp();
 		isFromWeatherActivity = getIntent().getBooleanExtra("from_weather_activity", false);
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		//已经选择了城市而且不是从WeatherActivity跳转过来，才会直接跳转到WeatherActivity
@@ -83,28 +100,28 @@ public class ChooseAreaActivity extends Activity {
 			finish();
 			return;
 		}
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		setContentView(R.layout.choose_area);
-		listView = (ListView) findViewById(R.id.list_view);
-		titleText = (TextView) findViewById(R.id.title_text);
+		
+		
+		listView = (ListView) findViewById(R.id.list_view);//城市选择的ListView
+		titleText = (TextView) findViewById(R.id.title_text);//首页Title
 		adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, dataList);
-		listView.setAdapter(adapter);
-		fltWeatherDb = FlyWeatherDb.getInstance(this);
+		listView.setAdapter(adapter);//设置Adapter
+		flyWeatherDb = FlyWeatherDb.getInstance(this);//获得数据库实例
+		//处理选择城市ListView的每一行点击事件
 		listView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
-			public void onItemClick(AdapterView<?> arg0, View view, int index,
-					long arg3) {
-				if (currentLevel == LEVEL_PROVINCE) {
-					selectedProvince = provinceList.get(index);
-					queryCities();
-				} else if (currentLevel == LEVEL_CITY) {
+			public void onItemClick(AdapterView<?> arg0, View view, int index,long arg3) {
+				if (currentLevel == LEVEL_PROVINCE) {//当前选中的级别是省
+					selectedProvince = provinceList.get(index);//获得选中的省份
+					queryCities();//根据选中的省份Id（selectedProvince），查询省下面的城市
+				} else if (currentLevel == LEVEL_CITY) {//同省份逻辑
 					selectedCity = cityList.get(index);
 					queryCounties();
-				} else if (currentLevel == LEVEL_COUNTY) {
+				} else if (currentLevel == LEVEL_COUNTY) {//出现城市之下的乡镇列表后
 					String countyCode = countyList.get(index).getCountryCode();
 					Intent intent = new Intent(ChooseAreaActivity.this, WeatherActivity.class);
-					intent.putExtra("county_code", countyCode);
-					startActivity(intent);
+					intent.putExtra("county_code", countyCode);//intent带上乡镇的编号到WeatherActivity页面
+					startActivity(intent);//开始跳转
 					finish();
 				}
 			}
@@ -116,7 +133,7 @@ public class ChooseAreaActivity extends Activity {
 	 * 查询全国所有的省，优先从数据库查询，如果没有查询到再去服务器上查询。
 	 */
 	private void queryProvinces() {
-		provinceList = fltWeatherDb.loadProvinces();
+		provinceList = flyWeatherDb.loadProvinces();
 		if (provinceList.size() > 0) {
 			dataList.clear();
 			for (Province province : provinceList) {
@@ -135,17 +152,20 @@ public class ChooseAreaActivity extends Activity {
 	 * 查询选中省内所有的市，优先从数据库查询，如果没有查询到再去服务器上查询。
 	 */
 	private void queryCities() {
-		cityList = fltWeatherDb.loadCities(selectedProvince.getId());
+		cityList = flyWeatherDb.loadCities(selectedProvince.getId());//从数据库根据选中的省Id读取某省下所有的城市信息
 		if (cityList.size() > 0) {
 			dataList.clear();
 			for (City city : cityList) {
 				dataList.add(city.getCityName());
 			}
-			adapter.notifyDataSetChanged();
+			//notifyDataSetChanged()可以在修改适配器绑定的数组后，
+			//不用重新刷新Activity，通知Activity更新ListView
+			adapter.notifyDataSetChanged();//到这里ListViwe刷新为城市的数组
 			listView.setSelection(0);
 			titleText.setText(selectedProvince.getProvinceName());
 			currentLevel = LEVEL_CITY;
 		} else {
+			//从服务器上地区数据
 			queryFromServer(selectedProvince.getProvinceCode(), "city");
 		}
 	}
@@ -154,7 +174,7 @@ public class ChooseAreaActivity extends Activity {
 	 * 查询选中市内所有的县，优先从数据库查询，如果没有查询到再去服务器上查询。
 	 */
 	private void queryCounties() {
-		countyList = fltWeatherDb.loadCounties(selectedCity.getId());
+		countyList = flyWeatherDb.loadCounties(selectedCity.getId());
 		if (countyList.size() > 0) {
 			dataList.clear();
 			for (Country county : countyList) {
@@ -179,18 +199,65 @@ public class ChooseAreaActivity extends Activity {
 			address = "http://www.weather.com.cn/data/list3/city.xml";
 		}
 		showProgressDialog();
-		HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
+		final StringRequest request = new StringRequest(address).setHttpListener(
+                new HttpListener<String>() {
+                    @Override
+                    public void onSuccess(String s, Response<String> response) {
+                    	/*HttpUtil.showTips(activity, "LiteHttp2.0", s);
+                        response.printInfo();*/
+                    	boolean result = false;
+                    	if ("province".equals(type)) {
+        					result = Utility.handleProvincesResponse(flyWeatherDb,
+        							s);
+        				} else if ("city".equals(type)) {
+        					result = Utility.handleCitiesResponse(flyWeatherDb,
+        							s, selectedProvince.getId());
+        				} else if ("county".equals(type)) {
+        					result = Utility.handleCountiesResponse(flyWeatherDb,
+        							s, selectedCity.getId());
+        				}
+                    	if (result) {
+        					// 通过runOnUiThread()方法回到主线程处理逻辑
+        					runOnUiThread(new Runnable() {
+        						@Override
+        						public void run() {
+        							closeProgressDialog();
+        							if ("province".equals(type)) {
+        								queryProvinces();
+        							} else if ("city".equals(type)) {
+        								queryCities();
+        							} else if ("county".equals(type)) {
+        								queryCounties();
+        							}
+        						}
+        					});
+        				}
+                    }
+
+                    @Override
+                    public void onFailure(HttpException e, Response<String> response) {
+                        HttpUtil.showTips(activity, "LiteHttp2.0", e.toString());
+                    }
+                }
+        );
+        // 1.1 execute async, nothing returned.
+        liteHttp.executeAsync(request);
+        // 1.2 perform async, future task returned.
+        FutureTask<String> task = liteHttp.performAsync(request);
+        task.cancel(true);
+        
+		/*HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
 			@Override
 			public void onFinish(String response) {
 				boolean result = false;
 				if ("province".equals(type)) {
-					result = Utility.handleProvincesResponse(fltWeatherDb,
+					result = Utility.handleProvincesResponse(flyWeatherDb,
 							response);
 				} else if ("city".equals(type)) {
-					result = Utility.handleCitiesResponse(fltWeatherDb,
+					result = Utility.handleCitiesResponse(flyWeatherDb,
 							response, selectedProvince.getId());
 				} else if ("county".equals(type)) {
-					result = Utility.handleCountiesResponse(fltWeatherDb,
+					result = Utility.handleCountiesResponse(flyWeatherDb,
 							response, selectedCity.getId());
 				}
 				if (result) {
@@ -223,7 +290,7 @@ public class ChooseAreaActivity extends Activity {
 					}
 				});
 			}
-		});
+		});*/
 	}
 	
 	/**
@@ -264,7 +331,27 @@ public class ChooseAreaActivity extends Activity {
 			finish();
 		}
 	}
-	
+	/**
+     * 单例 keep an singleton instance of litehttp
+     */
+    private void initLiteHttp() {
+        if (liteHttp == null) {
+            HttpConfig config = new HttpConfig(activity) // configuration quickly
+                    .setDebugged(true)                   // log output when debugged
+                    .setDetectNetwork(true)              // detect network before connect
+                    .setDoStatistics(true)               // statistics of time and traffic
+                    .setUserAgent("Mozilla/5.0 (...)")   // set custom User-Agent
+                    .setTimeOut(10000, 10000);             // connect and socket timeout: 10s
+            liteHttp = LiteHttp.newApacheHttpClient(config);
+        } else {
+            liteHttp.getConfig()                        // configuration directly
+                    .setDebugged(true)                  // log output when debugged
+                    .setDetectNetwork(true)             // detect network before connect
+                    .setDoStatistics(true)              // statistics of time and traffic
+                    .setUserAgent("Mozilla/5.0 (...)")  // set custom User-Agent
+                    .setTimeOut(10000, 10000);            // connect and socket timeout: 10s
+        }
+    }
 	
 	
 	
