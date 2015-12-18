@@ -6,23 +6,33 @@ import java.util.Locale;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.example.flyweather.activity.ChooseAreaActivity;
 import com.example.flyweather.db.FlyWeatherDb;
 import com.example.flyweather.model.City;
 import com.example.flyweather.model.County;
 import com.example.flyweather.model.Province;
+import com.litesuits.orm.LiteOrm;
+
 
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 public class Utility {
-
+	private static LiteOrm liteOrm=null;
+	//private static Province province=ChooseAreaActivity.province;
+	//private static City city =ChooseAreaActivity.city;
+	//private static County county=ChooseAreaActivity.county;
 	/**
 	 * 解析和处理服务器返回的省级数据
 	 */
-	public synchronized static boolean handleProvincesResponse(FlyWeatherDb flyWeatherDB, String response) {
+	/*public synchronized static boolean handleProvincesResponse(FlyWeatherDb flyWeatherDB, String response) {*/
+	public synchronized static boolean handleProvincesResponse(String response) {
+		//Log.d("查询省的信息--response： ", response);
+		liteOrm=ChooseAreaActivity.shareLiteOrm();
 		if (!TextUtils.isEmpty(response)) {
 			String[] allProvinces = response.split(",");
 			if (allProvinces != null && allProvinces.length > 0) {
@@ -32,7 +42,9 @@ public class Utility {
 					province.setProvinceCode(array[0]);
 					province.setProvinceName(array[1]);
 					// 将解析出来的数据存储到Province表
-					flyWeatherDB.saveProvince(province);
+					//flyWeatherDB.saveProvince(province);
+					liteOrm.insert(province);
+					
 				}
 				return true;
 			}
@@ -43,8 +55,9 @@ public class Utility {
 	/**
 	 * 解析和处理服务器返回的市级数据
 	 */
-	public static boolean handleCitiesResponse(FlyWeatherDb flyWeatherDB,
-			String response, int provinceId) {
+//	public static boolean handleCitiesResponse(FlyWeatherDb flyWeatherDB,
+	public static boolean handleCitiesResponse(String response, int provinceId) {
+		liteOrm=ChooseAreaActivity.shareLiteOrm();
 		if (!TextUtils.isEmpty(response)) {
 			String[] allCities = response.split(",");
 			if (allCities != null && allCities.length > 0) {
@@ -55,7 +68,8 @@ public class Utility {
 					city.setCityName(array[1]);
 					city.setProvinceId(provinceId);
 					// 将解析出来的数据存储到City表
-					flyWeatherDB.saveCity(city);
+					//flyWeatherDB.saveCity(city);
+					liteOrm.insert(city);
 				}
 				return true;
 			}
@@ -66,8 +80,9 @@ public class Utility {
 	/**
 	 * 解析和处理服务器返回的县级数据
 	 */
-	public static boolean handleCountiesResponse(FlyWeatherDb flyWeatherDB,
-			String response, int cityId) {
+//	public static boolean handleCountiesResponse(FlyWeatherDb flyWeatherDB,
+	public static boolean handleCountiesResponse(String response, int cityId) {
+		liteOrm=ChooseAreaActivity.shareLiteOrm();
 		if (!TextUtils.isEmpty(response)) {
 			String[] allCounties = response.split(",");
 			if (allCounties != null && allCounties.length > 0) {
@@ -78,7 +93,8 @@ public class Utility {
 					county.setCountyName(array[1]);
 					county.setCityId(cityId);
 					// 将解析出来的数据存储到County表
-					flyWeatherDB.saveCounty(county);
+					//flyWeatherDB.saveCounty(county);
+					liteOrm.insert(county);
 				}
 				return true;
 			}

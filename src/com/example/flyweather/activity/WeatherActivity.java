@@ -5,6 +5,7 @@ import com.example.flyweather.service.AutoUpdateService;
 import com.example.flyweather.util.HttpCallbackListener;
 import com.example.flyweather.util.HttpUtil;
 import com.example.flyweather.util.Utility;
+import com.litesuits.http.LiteHttp;
 
 
 import android.app.Activity;

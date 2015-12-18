@@ -4,6 +4,9 @@ package com.example.flyweather.activity;
 import java.util.concurrent.FutureTask;
 
 import com.example.flyweather.R;
+import com.example.flyweather.model.City;
+import com.example.flyweather.model.County;
+import com.example.flyweather.model.Province;
 import com.litesuits.http.HttpConfig;
 import com.litesuits.http.LiteHttp;
 import com.litesuits.http.exception.HttpException;
@@ -11,6 +14,7 @@ import com.litesuits.http.listener.HttpListener;
 import com.litesuits.http.request.StringRequest;
 import com.litesuits.http.response.Response;
 import com.litesuits.http.utils.HttpUtil;
+import com.litesuits.orm.LiteOrm;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -25,6 +29,15 @@ public class Test extends Activity implements OnClickListener{
     protected Activity activity = null;
     public static final String url = "http://www.weather.com.cn/data/list3/city.xml";
     private Button btn_liteHttp;
+    private Button btn_liteOrm;
+    
+    /*
+	 * 初始化Orm
+	 */
+	private static LiteOrm liteOrm;
+	public static Province province;
+	public static City city;
+	public static County county;
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState){
@@ -33,12 +46,22 @@ public class Test extends Activity implements OnClickListener{
 		setContentView(R.layout.test_layout);
 		activity = this;
 		initLiteHttp();
+		/*
+		 * 初始化Orm--开始
+		 */
+		initDB();
+		if (liteOrm == null) {
+			liteOrm = LiteOrm.newSingleInstance(this, "flyWeatherTest.db");
+		}
+		liteOrm.setDebugged(true); // open the log
 		initViews();
 		
 	}
 	private void initViews(){
 		btn_liteHttp=(Button) findViewById(R.id.LiteHttp);
 		btn_liteHttp.setOnClickListener(this);
+		btn_liteOrm=(Button) findViewById(R.id.LiteOrm);
+		btn_liteOrm.setOnClickListener(this);
 	}
 	
 	 private void initLiteHttp() {
@@ -89,10 +112,22 @@ public class Test extends Activity implements OnClickListener{
             FutureTask<String> task = liteHttp.performAsync(request);
             task.cancel(true);
 			break;
-
+		case R.id.LiteOrm:
+			liteOrm.save(province);
+			liteOrm.save(city);
+			liteOrm.save(county);
+			break;
 		default:
 			break;
 		}
 		
+	}
+	private void initDB() {
+		if (province != null) {
+            return;
+        }
+		province = new Province();
+		city = new City();
+		county = new County();
 	}
 }

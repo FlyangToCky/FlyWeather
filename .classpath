@@ -6,5 +6,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="lib" path="libs/lite-http-2.3.1.jar"/>
+	<classpathentry kind="lib" path="libs/lite-orm-1.7.0.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
