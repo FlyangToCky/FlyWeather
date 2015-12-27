@@ -32,6 +32,22 @@
         <activity android:name="com.example.flyweather.activity.WeatherActivity"></activity>
         <service android:name="com.example.flyweather.service.AutoUpdateService"></service>
         <receiver android:name="com.example.flyweather.receiver.AutoUpdateReceiver"></receiver>
+        
+         <!-- 声明widget对应的AppWidgetProvider -->
+         <!-- android.appwidget.action.APPWIDGET_UPDATE，必须要显示声明的action！
+         	因为所有的widget的广播都是通过它来发送的；要接收widget的添加、删除等广播，就必须包含它。 -->
+         <!-- 
+         <meta-data> 指定了 AppWidgetProviderInfo 对应的资源文件
+    android:name 指定metadata名，通过android.appwidget.provider来辨别data。
+    android:resource  指定 AppWidgetProviderInfo 对应的资源路径。即，xml/example_appwidget_info.xml。 -->	
+        <receiver android:name="com.example.flyweather.widget.WeatherWidgetProvider" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.skywang.widget.UPDATE_ALL"/>
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/widget" />
+        </receiver>
     </application>
 
 </manifest>
